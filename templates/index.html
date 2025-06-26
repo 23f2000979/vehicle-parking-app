@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Home - Vehicle Parking App
+{% endblock %}
+
+{% block content %}
+    <div class="d-flex justify-content-center align-items-center" style="min-height: 70vh;">
+        <div class="card shadow-lg p-4" style="max-width: 500px; width: 100%; border-radius: 1rem;">
+            <div class="card-body text-center">
+                <h1 class="display-4 mb-3">Welcome to <span style="color:#007bff;">Vehicle Parking App</span></h1>
+                <p class="lead mb-4">Your hassle-free solution for parking management.</p>
+                <div class="d-grid gap-3">
+                    <a href="{{ url_for('user_login') }}" class="btn btn-primary btn-lg">User Login</a>
+                    <a href="{{ url_for('user_register') }}" class="btn btn-success btn-lg">Register as User</a>
+                    <a href="{{ url_for('admin_login') }}" class="btn btn-secondary btn-lg">Admin Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

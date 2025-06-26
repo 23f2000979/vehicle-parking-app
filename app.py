@@ -90,7 +90,86 @@ with app.app_context():
         import traceback
         traceback.print_exc()
 
+# --- Routes ---
+@app.route("/")
+def home():
+    return render_template("index.html")
 
+@app.route("/user_register", methods=["GET", "POST"])
+def user_register():
+    if request.method == "POST":
+        email_id = request.form["email_id"]
+        password = request.form["password"]
+        full_name = request.form["full_name"]
+        address = request.form["address"]
+        pin_code = request.form["pin_code"]
+
+        existing_user = User.query.filter_by(email_id=email_id).first()
+        if existing_user:
+            flash("Email ID already registered. Please login or use a different email.", "danger")
+            return redirect(url_for("user_register"))
+
+        new_user = User(
+            email_id=email_id,
+            password=password, # NOTE: In a real application, hash this password!
+            full_name=full_name,
+            address=address,
+            pin_code=pin_code,
+            role="user"
+        )
+        db.session.add(new_user)
+        db.session.commit()
+        flash("Registration successful! Please login.", "success")
+        return redirect(url_for("user_login"))
+    return render_template("user_register.html")
+
+@app.route("/user_login", methods=["GET", "POST"])
+def user_login():
+    if request.method == "POST":
+        email_id = request.form["email_id"]
+        password = request.form["password"]
+        user = User.query.filter_by(email_id=email_id, role="user").first()
+
+        if user and user.password == password: # NOTE: In a real application, verify hashed password!
+            # Clear any admin session keys
+            session.pop("admin_logged_in", None)
+            session.pop("admin_id", None)
+            session["user_logged_in"] = True
+            session["user_id"] = user.id
+            session["user_email"] = user.email_id
+            flash(f"Welcome, {user.full_name}!", "success")
+            return redirect(url_for("user_dashboard"))
+        else:
+            flash("Invalid email or password.", "danger")
+            return redirect(url_for("user_login"))
+    return render_template("user_login.html")
+
+@app.route("/admin_login", methods=["GET", "POST"])
+def admin_login():
+    if request.method == "POST":
+        email_id = request.form["email_id"]
+        password = request.form["password"]
+        admin = User.query.filter_by(email_id=email_id, role="admin").first()
+
+        if admin and admin.password == password:
+            # Clear any user session keys
+            session.pop("user_logged_in", None)
+            session.pop("user_id", None)
+            session.pop("user_email", None)
+            session["admin_logged_in"] = True
+            session["admin_id"] = admin.id
+            flash("Welcome, Admin!", "success")
+            return redirect(url_for("admin_dashboard"))
+        else:
+            flash("Invalid admin credentials.", "danger")
+            return redirect(url_for("admin_login"))
+    return render_template("admin_login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("You have been logged out.", "info")
+    return redirect(url_for("home"))
 
 if __name__ == "__main__":
     app.run(debug=True)
