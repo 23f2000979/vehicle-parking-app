@@ -62,8 +62,7 @@ with app.app_context():
         # For production, you'd handle migrations.
         db_path = os.path.join(app.root_path, 'instance', 'parking.sqlite3')
         if os.path.exists(db_path):
-            print("Database file exists. Dropping all tables for a clean start...")
-            db.drop_all()
+            print("Database file exists.")
         else:
             print("Database file does not exist. Creating tables...")
 
@@ -170,6 +169,65 @@ def logout():
     session.clear()
     flash("You have been logged out.", "info")
     return redirect(url_for("home"))
+
+# User Dashboard
+@app.route("/user_dashboard", methods=["GET"])
+def user_dashboard():
+    if "user_logged_in" not in session:
+        flash("Please login to access your dashboard.", "danger")
+        return redirect(url_for("user_login"))
+
+    search_query = request.args.get('query', '').strip()
+    
+    all_parking_lots = db.session.query(ParkingLot).all()
+    parking_lots_data = []
+
+    for lot in all_parking_lots:
+        total_spots = db.session.query(ParkingSpot).filter_by(lot_id=lot.id).count()
+        available_spots = db.session.query(ParkingSpot).filter_by(lot_id=lot.id, status="A").count()
+        
+        # Apply search filter based on prime_location_name, address, or pin_code
+        if not search_query or \
+           search_query.lower() in lot.prime_location_name.lower() or \
+           search_query.lower() in lot.address.lower() or \
+           search_query.lower() in lot.pin_code.lower():
+            
+            parking_lots_data.append({
+                'lot': lot,
+                'total_spots': total_spots,
+                'available_spots': available_spots
+            })
+    
+    # Sort parking_lots_data (e.g., by prime_location_name)
+    parking_lots_data.sort(key=lambda x: x['lot'].prime_location_name.lower())
+
+    # Fetch data for user parking summary chart
+    user_id = session.get("user_id")
+    parking_history_for_chart = []
+    if user_id:
+        monthly_costs = db.session.query(
+            db.func.strftime('%Y-%m', ReservedSpot.parking_timestamp).label('month'),
+            db.func.sum(ReservedSpot.total_cost).label('total_cost')
+        ).filter(
+            ReservedSpot.user_id == user_id, 
+            ReservedSpot.total_cost.isnot(None)
+        ).group_by('month').order_by('month').all()
+        
+        for item in monthly_costs:
+            parking_history_for_chart.append({'month': item.month, 'total_cost': item.total_cost})
+
+    return render_template("user_dashboard.html", 
+                           parking_lots_data=parking_lots_data,
+                           parking_data_for_chart=parking_history_for_chart,
+                           query=search_query)
+
+# Admin Dashboard
+@app.route("/admin_dashboard")
+def admin_dashboard():
+    if "admin_logged_in" not in session:
+        flash("Please login to access the admin dashboard.", "danger")
+        return redirect(url_for("admin_login"))
+    return render_template("admin_dashboard.html")
 
 if __name__ == "__main__":
     app.run(debug=True)

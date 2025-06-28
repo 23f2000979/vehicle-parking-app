@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Admin Dashboard
+{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Welcome to your Admin Dashboard!</h1>
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h4>Parking Lots Overview</h4>
+                </div>
+                <div class="card-body">
+                    <p>Manage parking lots: add, edit, or delete them. View their current status and occupied spots.</p>
+                    <a href="{{ url_for('admin_parking_lots') }}" class="btn btn-primary mt-2">Manage Parking Lots</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h4>Registered Users</h4>
+                </div>
+                <div class="card-body">
+                    <p>View and manage all registered user accounts.</p>
+                    <a href="{{ url_for('admin_users') }}" class="btn btn-success mt-2">View Users</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h4>Overall Application Summary</h4>
+                </div>
+                <div class="card-body">
+                    <p>Access statistical charts and a summary of parking activity.</p>
+                    <a href="{{ url_for('admin_summary') }}" class="btn btn-info mt-2">View Summary & Charts</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %} 
