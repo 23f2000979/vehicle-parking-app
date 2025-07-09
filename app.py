@@ -229,5 +229,172 @@ def admin_dashboard():
         return redirect(url_for("admin_login"))
     return render_template("admin_dashboard.html")
 
+# Admin - Parking Lot Management Routes
+@app.route("/admin_parking_lots", methods=["GET", "POST"])
+def admin_parking_lots():
+    if "admin_logged_in" not in session:
+        flash("Please login to access the admin dashboard.", "danger")
+        return redirect(url_for("admin_login"))
+
+    if request.method == "POST":
+        prime_location_name = request.form["prime_location_name"].strip()
+        price_per_hour = float(request.form["price_per_hour"])
+        address = request.form["address"].strip()
+        pin_code = request.form["pin_code"].strip()
+        maximum_number_of_spots = int(request.form["maximum_number_of_spots"])
+
+        if not prime_location_name or not address or not pin_code:
+            flash("All fields are required.", "danger")
+            return redirect(url_for("admin_parking_lots"))
+        if not (0 < price_per_hour):
+            flash("Price per hour must be positive.", "danger")
+            return redirect(url_for("admin_parking_lots"))
+        if not (maximum_number_of_spots > 0):
+            flash("Maximum number of spots must be at least 1.", "danger")
+            return redirect(url_for("admin_parking_lots"))
+
+        existing_lot = db.session.query(ParkingLot).filter(db.func.lower(ParkingLot.prime_location_name) == db.func.lower(prime_location_name)).first()
+        if existing_lot:
+            flash("A parking lot with this name already exists.", "danger")
+            return redirect(url_for("admin_parking_lots"))
+
+        new_lot = ParkingLot(
+            prime_location_name=prime_location_name,
+            price_per_hour=price_per_hour,
+            address=address,
+            pin_code=pin_code,
+            maximum_number_of_spots=maximum_number_of_spots
+        )
+        db.session.add(new_lot)
+        db.session.commit()
+
+        # Create parking spots for the new lot
+        for i in range(1, maximum_number_of_spots + 1):
+            spot = ParkingSpot(lot_id=new_lot.id, spot_number=i, status="A")
+            db.session.add(spot)
+        db.session.commit()
+
+        flash("Parking Lot added successfully!", "success")
+        return redirect(url_for("admin_parking_lots"))
+
+    parking_lots = db.session.query(ParkingLot).order_by(ParkingLot.prime_location_name).all()
+    lot_data = []
+    for lot in parking_lots:
+        total_spots = db.session.query(ParkingSpot).filter_by(lot_id=lot.id).count()
+        occupied_spots = db.session.query(ParkingSpot).filter_by(lot_id=lot.id, status="O").count()
+        spots_in_lot = db.session.query(ParkingSpot).filter_by(lot_id=lot.id).order_by(ParkingSpot.spot_number).all()
+        lot_data.append({
+            'lot': lot,
+            'total_spots': total_spots,
+            'occupied_spots': occupied_spots,
+            'spots_list': spots_in_lot
+        })
+
+    return render_template("admin_parking_lots.html", lot_data=lot_data)
+
+@app.route("/admin_edit_parking_lot/<int:lot_id>", methods=["GET", "POST"])
+def admin_edit_parking_lot(lot_id):
+    if "admin_logged_in" not in session:
+        flash("Please login to access the admin dashboard.", "danger")
+        return redirect(url_for("admin_login"))
+
+    lot = db.session.query(ParkingLot).get_or_404(lot_id)
+
+    if request.method == "POST":
+        new_prime_location_name = request.form["prime_location_name"].strip()
+        price_per_hour = float(request.form["price_per_hour"])
+        address = request.form["address"].strip()
+        pin_code = request.form["pin_code"].strip()
+        new_max_spots = int(request.form["maximum_number_of_spots"])
+
+        if not new_prime_location_name or not address or not pin_code:
+            flash("All fields are required.", "danger")
+            return redirect(url_for("admin_edit_parking_lot", lot_id=lot.id))
+        if not (0 < price_per_hour):
+            flash("Price per hour must be positive.", "danger")
+            return redirect(url_for("admin_edit_parking_lot", lot_id=lot.id))
+        if not (new_max_spots > 0):
+            flash("Maximum number of spots must be at least 1.", "danger")
+            return redirect(url_for("admin_edit_parking_lot", lot_id=lot.id))
+
+        # Check for duplicate name, excluding current lot
+        existing_lot_with_name = db.session.query(ParkingLot).filter(
+            db.func.lower(ParkingLot.prime_location_name) == db.func.lower(new_prime_location_name),
+            ParkingLot.id != lot_id
+        ).first()
+        if existing_lot_with_name:
+            flash("A parking lot with this name already exists.", "danger")
+            return redirect(url_for("admin_edit_parking_lot", lot_id=lot.id))
+
+        current_spots_count = db.session.query(ParkingSpot).filter_by(lot_id=lot.id).count()
+
+        if new_max_spots < current_spots_count:
+            occupied_spots_count = db.session.query(ParkingSpot).filter_by(lot_id=lot.id, status="O").count()
+            if new_max_spots < occupied_spots_count:
+                flash(f"Cannot reduce spots below {occupied_spots_count} as there are still occupied spots.", "danger")
+                return redirect(url_for("admin_edit_parking_lot", lot_id=lot.id))
+
+            # Delete excess spots (start from highest spot_number)
+            # Ensure we only delete available spots and in correct order
+            spots_to_delete = db.session.query(ParkingSpot).filter_by(
+                lot_id=lot.id, status="A"
+            ).order_by(ParkingSpot.spot_number.desc()).limit(current_spots_count - new_max_spots).all()
+
+            if len(spots_to_delete) < (current_spots_count - new_max_spots):
+                 # This means some spots to be deleted were occupied, so we couldn't get enough available spots
+                 # This case should ideally be caught by the occupied_spots_count check above,
+                 # but this is a safeguard.
+                 flash("Cannot reduce number of spots while there are occupied spots in the ones to be deleted.", "danger")
+                 db.session.rollback()
+                 return redirect(url_for("admin_edit_parking_lot", lot_id=lot.id))
+
+
+            for spot in spots_to_delete:
+                db.session.delete(spot)
+
+        elif new_max_spots > current_spots_count:
+            # Add new spots
+            for i in range(current_spots_count + 1, new_max_spots + 1):
+                spot = ParkingSpot(lot_id=lot.id, spot_number=i, status="A")
+                db.session.add(spot)
+        
+        lot.prime_location_name = new_prime_location_name
+        lot.price_per_hour = price_per_hour
+        lot.address = address
+        lot.pin_code = pin_code
+        lot.maximum_number_of_spots = new_max_spots
+        db.session.commit()
+        flash("Parking Lot updated successfully!", "success")
+        return redirect(url_for("admin_parking_lots"))
+
+    return render_template("admin_edit_parking_lot.html", lot=lot)
+
+@app.route("/admin_delete_parking_lot/<int:lot_id>")
+def admin_delete_parking_lot(lot_id):
+    if "admin_logged_in" not in session:
+        flash("Please login to access the admin dashboard.", "danger")
+        return redirect(url_for("admin_login"))
+
+    lot = db.session.query(ParkingLot).get_or_404(lot_id)
+    
+    occupied_spots = db.session.query(ParkingSpot).filter_by(lot_id=lot.id, status="O").first()
+    if occupied_spots:
+        flash("Cannot delete parking lot as it contains occupied spots.", "danger")
+        return redirect(url_for("admin_parking_lots"))
+
+    db.session.delete(lot)
+    db.session.commit()
+    flash("Parking Lot deleted successfully!", "success")
+    return redirect(url_for("admin_parking_lots"))
+
+# Admin - User Management
+@app.route("/admin_users")
+def admin_users():
+    if "admin_logged_in" not in session:
+        flash("Please login to access the admin dashboard.", "danger")
+        return redirect(url_for("admin_login"))
+    users = db.session.query(User).filter_by(role="user").all()
+    return render_template("admin_users.html", users=users)
+
 if __name__ == "__main__":
     app.run(debug=True)

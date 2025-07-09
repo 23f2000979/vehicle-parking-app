@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Admin - Manage Parking Lots
+{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Manage Parking Lots</h1>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h4 class="mb-0">Add New Parking Lot</h4>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('admin_parking_lots') }}" method="POST">
+                <div class="mb-3">
+                    <label for="prime_location_name" class="form-label">Prime Location Name</label>
+                    <input type="text" class="form-control" id="prime_location_name" name="prime_location_name" required>
+                </div>
+                <div class="mb-3">
+                    <label for="price_per_hour" class="form-label">Price per Hour ($)</label>
+                    <input type="number" step="0.01" class="form-control" id="price_per_hour" name="price_per_hour" required min="0">
+                </div>
+                <div class="mb-3">
+                    <label for="address" class="form-label">Address</label>
+                    <input type="text" class="form-control" id="address" name="address" required>
+                </div>
+                <div class="mb-3">
+                    <label for="pin_code" class="form-label">Pin Code</label>
+                    <input type="text" class="form-control" id="pin_code" name="pin_code" required pattern="[0-9]{6}" title="Please enter a 6-digit pin code.">
+                </div>
+                <div class="mb-3">
+                    <label for="maximum_number_of_spots" class="form-label">Maximum Number of Spots</label>
+                    <input type="number" class="form-control" id="maximum_number_of_spots" name="maximum_number_of_spots" required min="1">
+                </div>
+                <button type="submit" class="btn btn-success w-100">Add Parking Lot</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Existing Parking Lots</h4>
+        </div>
+        <div class="card-body">
+            {% if lot_data %}
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                {% for data in lot_data %}
+                    <div class="col">
+                        <div class="card h-100 border-{{ 'danger' if data.occupied_spots > 0 else 'success' }}">
+                            <div class="card-header bg-{{ 'danger' if data.occupied_spots > 0 else 'success' }} text-white">
+                                <h5 class="card-title mb-0">{{ data.lot.prime_location_name }}</h5>
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <p class="card-text"><strong>Address:</strong> {{ data.lot.address }}, {{ data.lot.pin_code }}</p>
+                                <p class="card-text"><strong>Price/Hour:</strong> ${{ "%.2f"|format(data.lot.price_per_hour) }}</p>
+                                <p class="card-text mb-2"><strong>Spots:</strong> <span class="badge bg-secondary">Total: {{ data.total_spots }}</span> <span class="badge bg-danger">Occupied: {{ data.occupied_spots }}</span> <span class="badge bg-success">Available: {{ data.total_spots - data.occupied_spots }}</span></p>
+                                
+                                <hr/>
+                                <h6>Spot Status:</h6>
+                                <div class="d-flex flex-wrap flex-grow-1">
+                                    {% for spot in data.spots_list %}
+                                        <span class="badge m-1 p-2 
+                                            {% if spot.status == 'O' %}bg-danger
+                                            {% else %}bg-success
+                                            {% endif %}"
+                                            title="Spot {{ spot.spot_number }}: {% if spot.status == 'O' %}Occupied{% else %}Available{% endif %}">
+                                            {{ spot.spot_number }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="card-footer d-flex justify-content-between bg-light border-top">
+                                <a href="{{ url_for('admin_edit_parking_lot', lot_id=data.lot.id) }}" class="btn btn-sm btn-warning">Edit</a>
+                                <a href="{{ url_for('admin_delete_parking_lot', lot_id=data.lot.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this parking lot? This can only be done if all spots are available.');">Delete</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <p>No parking lots added yet. Use the form above to add your first parking lot!</p>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %} 
