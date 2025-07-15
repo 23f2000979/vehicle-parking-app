@@ -396,5 +396,89 @@ def admin_users():
     users = db.session.query(User).filter_by(role="user").all()
     return render_template("admin_users.html", users=users)
 
+# User - Parking Functionality
+@app.route("/book_parking_spot/<int:lot_id>", methods=["GET", "POST"])
+def book_parking_spot(lot_id):
+    if "user_logged_in" not in session:
+        flash("Please login to book a parking spot.", "danger")
+        return redirect(url_for("user_login"))
+
+    parking_lot = db.session.query(ParkingLot).get_or_404(lot_id)
+    
+    if request.method == "POST":
+        vehicle_number = request.form["vehicle_number"].strip().upper()
+        user_id = session["user_id"]
+
+        if not vehicle_number:
+            flash("Vehicle number is required.", "danger")
+            return redirect(url_for("book_parking_spot", lot_id=lot_id))
+
+        # Find the first available spot in the selected lot
+        available_spot = db.session.query(ParkingSpot).filter_by(lot_id=lot_id, status="A").order_by(ParkingSpot.spot_number).first()
+
+        if not available_spot:
+            flash("No available spots in this parking lot.", "danger")
+            return redirect(url_for("user_dashboard"))
+
+        # Optional: Check if the user already has an active reservation
+        active_reservation = db.session.query(ReservedSpot).filter_by(user_id=user_id, leaving_timestamp=None).first()
+        if active_reservation:
+            flash("You already have an active parking reservation. Please release it first.", "warning")
+            return redirect(url_for("user_dashboard"))
+
+        new_reservation = ReservedSpot(
+            spot_id=available_spot.id,
+            user_id=user_id,
+            vehicle_number=vehicle_number,
+            parking_timestamp=datetime.datetime.now()
+        )
+        db.session.add(new_reservation)
+        available_spot.status = "O" # Mark spot as Occupied
+        db.session.commit()
+
+        flash(f"Successfully booked spot {available_spot.spot_number} in {parking_lot.prime_location_name}! Vehicle: {vehicle_number}", "success")
+        return redirect(url_for("user_dashboard"))
+
+    return render_template("book_parking_spot.html", parking_lot=parking_lot)
+
+@app.route("/release_parking_spot/<int:reservation_id>", methods=["GET", "POST"])
+def release_parking_spot(reservation_id):
+    if "user_logged_in" not in session:
+        flash("Please login to release a parking spot.", "danger")
+        return redirect(url_for("user_login"))
+
+    reservation = db.session.query(ReservedSpot).get_or_404(reservation_id)
+
+    # Ensure the reservation belongs to the logged-in user
+    if reservation.user_id != session["user_id"]:
+        flash("You are not authorized to release this reservation.", "danger")
+        return redirect(url_for("user_dashboard"))
+
+    if reservation.leaving_timestamp is not None:
+        flash("This spot has already been released.", "warning")
+        return redirect(url_for("user_history"))
+
+    parking_spot = db.session.query(ParkingSpot).get_or_404(reservation.spot_id)
+    parking_lot = db.session.query(ParkingLot).get_or_404(parking_spot.lot_id)
+
+    if request.method == "POST":
+        reservation.leaving_timestamp = datetime.datetime.now()
+
+        # Calculate parking duration and cost
+        duration = reservation.leaving_timestamp - reservation.parking_timestamp
+        # Convert duration to hours (can be fractional)
+        duration_in_hours = duration.total_seconds() / 3600
+        total_cost = duration_in_hours * parking_lot.price_per_hour
+        reservation.total_cost = round(total_cost, 2) # Round to 2 decimal places
+
+        parking_spot.status = "A" # Mark spot as Available
+        db.session.commit()
+
+        flash(f"Spot {parking_spot.spot_number} released successfully! Total cost: ${reservation.total_cost:.2f}", "success")
+        return redirect(url_for("user_history"))
+
+    return render_template("release_parking_spot.html", reservation=reservation, parking_spot=parking_spot, parking_lot=parking_lot)
+
+
 if __name__ == "__main__":
     app.run(debug=True)
