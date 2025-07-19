@@ -52,7 +52,6 @@ class ReservedSpot(db.Model):
     vehicle_number = db.Column(db.String(20), nullable=False)
     parking_timestamp = db.Column(db.DateTime, nullable=False, default=datetime.datetime.now)
     leaving_timestamp = db.Column(db.DateTime, nullable=True)
-    total_cost = db.Column(db.Float, nullable=True)
 
 # Database Initialization and Admin Creation
 with app.app_context():
@@ -200,21 +199,6 @@ def user_dashboard():
     
     # Sort parking_lots_data (e.g., by prime_location_name)
     parking_lots_data.sort(key=lambda x: x['lot'].prime_location_name.lower())
-
-    # Fetch data for user parking summary chart
-    user_id = session.get("user_id")
-    parking_history_for_chart = []
-    if user_id:
-        monthly_costs = db.session.query(
-            db.func.strftime('%Y-%m', ReservedSpot.parking_timestamp).label('month'),
-            db.func.sum(ReservedSpot.total_cost).label('total_cost')
-        ).filter(
-            ReservedSpot.user_id == user_id, 
-            ReservedSpot.total_cost.isnot(None)
-        ).group_by('month').order_by('month').all()
-        
-        for item in monthly_costs:
-            parking_history_for_chart.append({'month': item.month, 'total_cost': item.total_cost})
 
     return render_template("user_dashboard.html", 
                            parking_lots_data=parking_lots_data,
@@ -461,24 +445,31 @@ def release_parking_spot(reservation_id):
     parking_spot = db.session.query(ParkingSpot).get_or_404(reservation.spot_id)
     parking_lot = db.session.query(ParkingLot).get_or_404(parking_spot.lot_id)
 
-    if request.method == "POST":
-        reservation.leaving_timestamp = datetime.datetime.now()
 
-        # Calculate parking duration and cost
-        duration = reservation.leaving_timestamp - reservation.parking_timestamp
-        # Convert duration to hours (can be fractional)
-        duration_in_hours = duration.total_seconds() / 3600
-        total_cost = duration_in_hours * parking_lot.price_per_hour
-        reservation.total_cost = round(total_cost, 2) # Round to 2 decimal places
-
-        parking_spot.status = "A" # Mark spot as Available
-        db.session.commit()
-
-        flash(f"Spot {parking_spot.spot_number} released successfully! Total cost: ${reservation.total_cost:.2f}", "success")
-        return redirect(url_for("user_history"))
 
     return render_template("release_parking_spot.html", reservation=reservation, parking_spot=parking_spot, parking_lot=parking_lot)
 
+@app.route("/user_history")
+def user_history():
+    if "user_logged_in" not in session:
+        flash("Please login to view your parking history.", "danger")
+        return redirect(url_for("user_login"))
+
+    user_id = session["user_id"]
+    parking_history = db.session.query(ReservedSpot).filter_by(user_id=user_id).order_by(ReservedSpot.parking_timestamp.desc()).all()
+
+    # Prepare data for rendering, including lot and spot details
+    history_data = []
+    for res in parking_history:
+        spot = db.session.query(ParkingSpot).get(res.spot_id)
+        lot = db.session.query(ParkingLot).get(spot.lot_id) if spot else None
+        history_data.append({
+            'reservation': res,
+            'spot': spot,
+            'lot': lot
+        })
+
+    return render_template("user_history.html", history_data=history_data)
 
 if __name__ == "__main__":
     app.run(debug=True)

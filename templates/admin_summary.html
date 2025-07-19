@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Admin - Summary
+{% endblock %}
+
+{% block content %}
+    <h1 class="mb-4">Application Summary & Analytics</h1>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3 h-100">
+                <div class="card-header" style="color: rgb(41, 23, 2);">Total Parking Lots</div>
+                <div class="card-body">
+                    <h3 class="card-title">{{ total_parking_lots }}</h3>
+                    <p class="card-text">Overall parking locations managed.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info mb-3 h-100">
+                <div class="card-header"  style="color: rgb(41, 23, 2);">Total Parking Spots</div>
+                <div class="card-body">
+                    <h3 class="card-title">{{ total_parking_spots }}</h3>
+                    <p class="card-text">Total capacity across all lots.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger mb-3 h-100">
+                <div class="card-header"  style="color: rgb(41, 23, 2);">Occupied Spots</div>
+                <div class="card-body">
+                    <h3 class="card-title">{{ occupied_parking_spots }}</h3>
+                    <p class="card-text">Spots currently in use.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3 h-100">
+                <div class="card-header"  style="color: rgb(41, 23, 2);">Available Spots</div>
+                <div class="card-body">
+                    <h3 class="card-title">{{ available_parking_spots }}</h3>
+                    <p class="card-text">Spots ready for new vehicles.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-secondary mb-3 h-100">
+                <div class="card-header"  style="color: rgb(41, 23, 2);">Registered Users</div>
+                <div class="card-body">
+                    <h3 class="card-title">{{ total_users }}</h3>
+                    <p class="card-text">Total active users on the platform.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-dark mb-3 h-100">
+                <div class="card-header" style="color: rgb(41, 23, 2);">Total Reservations</div>
+                <div class="card-body">
+                    <h3 class="card-title">{{ total_reserved_spots }}</h3>
+                    <p class="card-text">Total parking bookings made.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3 h-100">
+                <div class="card-header" style="color: rgb(41, 23, 2);">Total Revenue</div>
+                <div class="card-body">
+                    <h3 class="card-title">${{ "%.2f"|format(total_revenue) }}</h3>
+                    <p class="card-text">Total revenue generated from all bookings.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white">
+            <h4 class="mb-0">Parking Lot Occupancy (Visual)</h4>
+        </div>
+        <div class="card-body">
+            <div style="width: 80%; margin: auto;">
+                <canvas id="lotOccupancyChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const ctx = document.getElementById('lotOccupancyChart').getContext('2d');
+            const lotOccupancyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [{% for data in lot_occupancy_data %}'{{ data.name }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+                    datasets: [
+                        {
+                            label: 'Occupied Spots',
+                            data: [{% for data in lot_occupancy_data %}{{ data.occupied }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                            backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                            borderColor: 'rgba(220, 53, 69, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Available Spots',
+                            data: [{% for data in lot_occupancy_data %}{{ data.total - data.occupied }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                            backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            stacked: true,
+                            title: {
+                                display: true,
+                                text: 'Parking Lot'
+                            }
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Spots'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Parking Lot Occupancy'
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+{% endblock %} 
