@@ -63,7 +63,6 @@ with app.app_context():
         db_path = os.path.join(app.root_path, 'instance', 'parking.sqlite3')
         if os.path.exists(db_path):
             print("Database file exists.")
-            db.drop_all()
         else:
             print("Database file does not exist. Creating tables...")
 
