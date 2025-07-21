@@ -69,18 +69,29 @@
         </div>
     </div>
 
-    {% if parking_data_for_chart %} 
+    {% if parking_data_for_chart %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Chart data from server -->
+    <script type="application/json" id="userChartData">
+        {
+            "labels": [{% for data in parking_data_for_chart %}"{{ data.month }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+            "costs": [{% for data in parking_data_for_chart %}{{ data.total_cost }}{% if not loop.last %}, {% endif %}{% endfor %}]
+        }
+    </script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('userParkingChart').getContext('2d');
+            const chartData = JSON.parse(document.getElementById('userChartData').textContent);
+            
             const userParkingChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
-                    labels: [{% for data in parking_data_for_chart %}'{{ data.month }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+                    labels: chartData.labels,
                     datasets: [{
                         label: 'Total Parking Cost ($)',
-                        data: [{% for data in parking_data_for_chart %}{{ data.total_cost }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                        data: chartData.costs,
                         backgroundColor: 'rgba(54, 162, 235, 0.5)',
                         borderColor: 'rgba(54, 162, 235, 1)',
                         borderWidth: 1
@@ -106,7 +117,6 @@
                 }
             });
         });
-        
     </script>
     {% endif %}
 {% endblock %} 

@@ -8,7 +8,7 @@ app = Flask(__name__, template_folder="templates")
 # Configure database
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///parking.sqlite3"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SECRET_KEY"] = "supersecretkeyforvehicleparkingapp" 
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "supersecretkeyforvehicleparkingapp") # Use environment variable in production
 
 db = SQLAlchemy(app)
 
@@ -40,18 +40,19 @@ class ParkingSpot(db.Model):
     lot_id = db.Column(db.Integer, db.ForeignKey("parking_lots.id"), nullable=False)
     spot_number = db.Column(db.Integer, nullable=False) # e.g., 1, 2, 3... within a lot
     status = db.Column(db.String(1), nullable=False, default="A") # 'A' for Available, 'O' for Occupied
-    reserved_spot_link = db.relationship("ReservedSpot", backref="parking_spot", uselist=False, cascade="all, delete-orphan") # One-to-one relationship
+    reserved_spots = db.relationship("ReservedSpot", backref="parking_spot", cascade="all, delete-orphan") # One-to-many relationship
 
     __table_args__ = (db.UniqueConstraint('lot_id', 'spot_number', name='_lot_spot_uc'),)
 
 class ReservedSpot(db.Model):
     __tablename__ = "reserved_spots"
     id = db.Column(db.Integer, primary_key=True)
-    spot_id = db.Column(db.Integer, db.ForeignKey("parking_spots.id"), unique=True, nullable=False) # One reserved spot per parking spot
+    spot_id = db.Column(db.Integer, db.ForeignKey("parking_spots.id"), nullable=False) # Remove unique=True
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     vehicle_number = db.Column(db.String(20), nullable=False)
     parking_timestamp = db.Column(db.DateTime, nullable=False, default=datetime.datetime.now)
     leaving_timestamp = db.Column(db.DateTime, nullable=True)
+    total_cost = db.Column(db.Float, nullable=True)
 
 # Database Initialization and Admin Creation
 with app.app_context():
@@ -62,6 +63,7 @@ with app.app_context():
         db_path = os.path.join(app.root_path, 'instance', 'parking.sqlite3')
         if os.path.exists(db_path):
             print("Database file exists.")
+            db.drop_all()
         else:
             print("Database file does not exist. Creating tables...")
 
@@ -92,6 +94,11 @@ with app.app_context():
 @app.route("/")
 def home():
     return render_template("index.html")
+
+@app.route("/health")
+def health_check():
+    """Health check endpoint for monitoring."""
+    return {"status": "healthy", "message": "Vehicle Parking App is running"}, 200
 
 @app.route("/user_register", methods=["GET", "POST"])
 def user_register():
@@ -199,6 +206,21 @@ def user_dashboard():
     
     # Sort parking_lots_data (e.g., by prime_location_name)
     parking_lots_data.sort(key=lambda x: x['lot'].prime_location_name.lower())
+
+    # Fetch data for user parking summary chart
+    user_id = session.get("user_id")
+    parking_history_for_chart = []
+    if user_id:
+        monthly_costs = db.session.query(
+            db.func.strftime('%Y-%m', ReservedSpot.parking_timestamp).label('month'),
+            db.func.sum(ReservedSpot.total_cost).label('total_cost')
+        ).filter(
+            ReservedSpot.user_id == user_id, 
+            ReservedSpot.total_cost.isnot(None)
+        ).group_by('month').order_by('month').all()
+        
+        for item in monthly_costs:
+            parking_history_for_chart.append({'month': item.month, 'total_cost': item.total_cost})
 
     return render_template("user_dashboard.html", 
                            parking_lots_data=parking_lots_data,
@@ -380,6 +402,41 @@ def admin_users():
     users = db.session.query(User).filter_by(role="user").all()
     return render_template("admin_users.html", users=users)
 
+# Admin - Summary Charts
+@app.route("/admin_summary")
+def admin_summary():
+    if "admin_logged_in" not in session:
+        flash("Please login to access the admin dashboard.", "danger")
+        return redirect(url_for("admin_login"))
+
+    total_parking_lots = db.session.query(ParkingLot).count()
+    total_parking_spots = db.session.query(ParkingSpot).count()
+    occupied_parking_spots = db.session.query(ParkingSpot).filter_by(status="O").count()
+    available_parking_spots = total_parking_spots - occupied_parking_spots
+    total_users = db.session.query(User).filter_by(role="user").count()
+    total_reserved_spots = db.session.query(ReservedSpot).count()
+
+    total_revenue = db.session.query(db.func.sum(ReservedSpot.total_cost)).filter(ReservedSpot.total_cost.isnot(None)).scalar() or 0.0
+
+    # Data for charts (using dummy for now, will integrate Chart.js if needed later)
+    lot_occupancy_data = []
+    parking_lots = db.session.query(ParkingLot).all()
+    for lot in parking_lots:
+        occupied = db.session.query(ParkingSpot).filter_by(lot_id=lot.id, status="O").count()
+        total = db.session.query(ParkingSpot).filter_by(lot_id=lot.id).count()
+        lot_occupancy_data.append({'name': lot.prime_location_name, 'occupied': occupied, 'total': total})
+
+    return render_template("admin_summary.html", 
+                           total_parking_lots=total_parking_lots,
+                           total_parking_spots=total_parking_spots,
+                           occupied_parking_spots=occupied_parking_spots,
+                           available_parking_spots=available_parking_spots,
+                           total_users=total_users,
+                           total_reserved_spots=total_reserved_spots,
+                           total_revenue=total_revenue,
+                           lot_occupancy_data=lot_occupancy_data
+                           )
+
 # User - Parking Functionality
 @app.route("/book_parking_spot/<int:lot_id>", methods=["GET", "POST"])
 def book_parking_spot(lot_id):
@@ -445,7 +502,21 @@ def release_parking_spot(reservation_id):
     parking_spot = db.session.query(ParkingSpot).get_or_404(reservation.spot_id)
     parking_lot = db.session.query(ParkingLot).get_or_404(parking_spot.lot_id)
 
+    if request.method == "POST":
+        reservation.leaving_timestamp = datetime.datetime.now()
 
+        # Calculate parking duration and cost
+        duration = reservation.leaving_timestamp - reservation.parking_timestamp
+        # Convert duration to hours (can be fractional)
+        duration_in_hours = duration.total_seconds() / 3600
+        total_cost = duration_in_hours * parking_lot.price_per_hour
+        reservation.total_cost = round(total_cost, 2) # Round to 2 decimal places
+
+        parking_spot.status = "A" # Mark spot as Available
+        db.session.commit()
+
+        flash(f"Spot {parking_spot.spot_number} released successfully! Total cost: ${reservation.total_cost:.2f}", "success")
+        return redirect(url_for("user_history"))
 
     return render_template("release_parking_spot.html", reservation=reservation, parking_spot=parking_spot, parking_lot=parking_lot)
 
@@ -472,4 +543,5 @@ def user_history():
     return render_template("user_history.html", history_data=history_data)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False) 
