@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-    Release Parking Spot
+    Release My Spot
 {% endblock %}
 
 {% block content %}
@@ -9,16 +9,15 @@
         <div class="col-md-6">
             <div class="card shadow-sm">
                 <div class="card-header bg-danger text-white">
-                    <h3 class="text-center mb-0">Release Parking Spot</h3>
+                    <h3 class="text-center mb-0">Release Your Parking Spot</h3>
                 </div>
                 <div class="card-body">
-                    <p class="lead">You are about to release spot <strong>{{ parking_spot.spot_number }}</strong> in <strong>{{ parking_lot.prime_location_name }}</strong>.</p>
+                    <p class="lead">You're about to release spot <strong>{{ parking_spot.spot_number }}</strong> in <strong>{{ parking_lot.prime_location_name }}</strong>.</p>
                     <p>Vehicle Number: <strong>{{ reservation.vehicle_number }}</strong></p>
-                    <p>Parking Timestamp: <strong>{{ reservation.parking_timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</strong></p>
-                    <p class="text-muted">Confirm release to calculate total cost and make the spot available.</p>
-                    
+                    <p>Parked On: <strong>{{ reservation.parking_timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</strong></p>
+                    <p class="text-muted">Click below to finish and free up your spot.</p>
                     <form action="{{ url_for('release_parking_spot', reservation_id=reservation.id) }}" method="POST">
-                        <button type="submit" class="btn btn-danger w-100">Confirm Release</button>
+                        <button type="submit" class="btn btn-danger w-100">Release My Spot</button>
                     </form>
                     <p class="text-center mt-3"><a href="{{ url_for('user_dashboard') }}" class="btn btn-outline-secondary">Cancel</a></p>
                 </div>

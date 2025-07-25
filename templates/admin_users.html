@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
 {% block title %}
-    Admin - Manage Users
+    Manage Users
 {% endblock %}
 
 {% block content %}
-    <h1 class="mb-4">Manage Registered Users</h1>
+    <h1 class="mb-4">User Management</h1>
 
     <div class="card shadow-sm">
         <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">Registered Users List</h4>
+            <h4 class="mb-0">All Registered Users</h4>
         </div>
         <div class="card-body">
             {% if users %}
@@ -18,12 +18,11 @@
                         <thead>
                             <tr>
                                 <th scope="col">#</th>
-                                <th scope="col">Email ID</th>
+                                <th scope="col">Email</th>
                                 <th scope="col">Full Name</th>
                                 <th scope="col">Address</th>
                                 <th scope="col">Pin Code</th>
                                 <th scope="col">Role</th>
-                                <!-- Add actions like delete user if required by project -->
                             </tr>
                         </thead>
                         <tbody>
@@ -41,7 +40,7 @@
                     </table>
                 </div>
             {% else %}
-                <p class="text-center">No regular users registered yet.</p>
+                <p class="text-center">No users registered yet.</p>
             {% endif %}
         </div>
     </div>

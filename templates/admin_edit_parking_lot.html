@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 
 {% block title %}
-    Admin - Edit Parking Lot
+    Edit Parking Lot
 {% endblock %}
 
 {% block content %}
-    <h1 class="mb-4">Edit Parking Lot: {{ lot.prime_location_name }}</h1>
+    <h1 class="mb-4">Edit Lot: {{ lot.prime_location_name }}</h1>
 
     <div class="card shadow-sm">
         <div class="card-header bg-warning text-dark">
-            <h4 class="mb-0">Edit Details</h4>
+            <h4 class="mb-0">Update Details</h4>
         </div>
         <div class="card-body">
             <form action="{{ url_for('admin_edit_parking_lot', lot_id=lot.id) }}" method="POST">
                 <div class="mb-3">
-                    <label for="prime_location_name" class="form-label">Prime Location Name</label>
+                    <label for="prime_location_name" class="form-label">Location Name</label>
                     <input type="text" class="form-control" id="prime_location_name" name="prime_location_name" value="{{ lot.prime_location_name }}" required>
                 </div>
                 <div class="mb-3">
-                    <label for="price_per_hour" class="form-label">Price per Hour ($)</label>
+                    <label for="price_per_hour" class="form-label">Hourly Rate ($)</label>
                     <input type="number" step="0.01" class="form-control" id="price_per_hour" name="price_per_hour" value="{{ lot.price_per_hour }}" required min="0">
                 </div>
                 <div class="mb-3">
@@ -30,10 +30,10 @@
                     <input type="text" class="form-control" id="pin_code" name="pin_code" value="{{ lot.pin_code }}" required pattern="[0-9]{6}" title="Please enter a 6-digit pin code.">
                 </div>
                 <div class="mb-3">
-                    <label for="maximum_number_of_spots" class="form-label">Maximum Number of Spots</label>
+                    <label for="maximum_number_of_spots" class="form-label">Total Spots</label>
                     <input type="number" class="form-control" id="maximum_number_of_spots" name="maximum_number_of_spots" value="{{ lot.maximum_number_of_spots }}" required min="1">
                 </div>
-                <button type="submit" class="btn btn-warning">Update Parking Lot</button>
+                <button type="submit" class="btn btn-warning">Save Changes</button>
                 <a href="{{ url_for('admin_parking_lots') }}" class="btn btn-secondary">Cancel</a>
             </form>
         </div>

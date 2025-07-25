@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block content %}
-    <h1 class="mb-4">Welcome to your Admin Dashboard!</h1>
+    <h1 class="mb-4">Hello Admin, welcome to your dashboard!</h1>
     <div class="row">
         <div class="col-md-6 mb-4">
             <div class="card h-100">
@@ -13,7 +13,7 @@
                     <h4>Parking Lots Overview</h4>
                 </div>
                 <div class="card-body">
-                    <p>Manage parking lots: add, edit, or delete them. View their current status and occupied spots.</p>
+                    <p>Here you can add, edit, or remove parking lots and see their current status.</p>
                     <a href="{{ url_for('admin_parking_lots') }}" class="btn btn-primary mt-2">Manage Parking Lots</a>
                 </div>
             </div>
@@ -24,7 +24,7 @@
                     <h4>Registered Users</h4>
                 </div>
                 <div class="card-body">
-                    <p>View and manage all registered user accounts.</p>
+                    <p>See all users and manage their accounts if needed.</p>
                     <a href="{{ url_for('admin_users') }}" class="btn btn-success mt-2">View Users</a>
                 </div>
             </div>
@@ -34,11 +34,11 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header bg-info text-white">
-                    <h4>Overall Application Summary</h4>
+                    <h4>App Summary</h4>
                 </div>
                 <div class="card-body">
-                    <p>Access statistical charts and a summary of parking activity.</p>
-                    <a href="{{ url_for('admin_summary') }}" class="btn btn-info mt-2">View Summary & Charts</a>
+                    <p>Check out stats and charts about parking activity here.</p>
+                    <a href="{{ url_for('admin_summary') }}" class="btn btn-info mt-2">See Summary & Charts</a>
                 </div>
             </div>
         </div>

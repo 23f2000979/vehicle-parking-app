@@ -1,8 +1,8 @@
-/* static/css/style.css */
+/* Main stylesheet for the Vehicle Parking App - clean, simple, and easy to tweak! */
 body {
-    padding-top: 0px; /* Adjust for fixed navbar height */
-    background-color: #f8f9fa; /* Light gray background */
-    color: #343a40; /* Dark text for readability */
+    padding-top: 0px; /* Makes room for the navbar */
+    background-color: #f8f9fa; /* Soft background for a modern look */
+    color: #343a40; /* Easy-to-read dark text */
 }
 
 .navbar {
@@ -76,7 +76,7 @@ input.form-control:focus, select.form-select:focus {
     font-size: 1.25rem;
 }
 
-/* Specific styles for parking spot badges */
+/* Badges for parking spots - easy to spot and friendly! */
 .badge.p-2 {
     min-width: 30px;
     display: inline-flex;

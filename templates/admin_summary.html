@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block title %}
-    Admin - Summary
+    App Summary
 {% endblock %}
 
 {% block content %}
-    <h1 class="mb-4">Application Summary & Analytics</h1>
+    <h1 class="mb-4">App Summary & Insights</h1>
 
     <div class="row mb-4">
         <div class="col-md-3">
@@ -13,7 +13,7 @@
                 <div class="card-header" style="color: rgb(41, 23, 2);">Total Parking Lots</div>
                 <div class="card-body">
                     <h3 class="card-title">{{ total_parking_lots }}</h3>
-                    <p class="card-text">Overall parking locations managed.</p>
+                    <p class="card-text">All parking locations managed here.</p>
                 </div>
             </div>
         </div>
@@ -22,7 +22,7 @@
                 <div class="card-header"  style="color: rgb(41, 23, 2);">Total Parking Spots</div>
                 <div class="card-body">
                     <h3 class="card-title">{{ total_parking_spots }}</h3>
-                    <p class="card-text">Total capacity across all lots.</p>
+                    <p class="card-text">How many cars you can fit, in total.</p>
                 </div>
             </div>
         </div>
@@ -49,7 +49,7 @@
                 <div class="card-header"  style="color: rgb(41, 23, 2);">Registered Users</div>
                 <div class="card-body">
                     <h3 class="card-title">{{ total_users }}</h3>
-                    <p class="card-text">Total active users on the platform.</p>
+                    <p class="card-text">People using your parking system.</p>
                 </div>
             </div>
         </div>
@@ -58,7 +58,7 @@
                 <div class="card-header" style="color: rgb(41, 23, 2);">Total Reservations</div>
                 <div class="card-body">
                     <h3 class="card-title">{{ total_reserved_spots }}</h3>
-                    <p class="card-text">Total parking bookings made.</p>
+                    <p class="card-text">All bookings made so far.</p>
                 </div>
             </div>
         </div>
@@ -67,7 +67,7 @@
                 <div class="card-header" style="color: rgb(41, 23, 2);">Total Revenue</div>
                 <div class="card-body">
                     <h3 class="card-title">${{ "%.2f"|format(total_revenue) }}</h3>
-                    <p class="card-text">Total revenue generated from all bookings.</p>
+                    <p class="card-text">Total money earned from bookings.</p>
                 </div>
             </div>
         </div>
@@ -75,7 +75,7 @@
 
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-dark text-white">
-            <h4 class="mb-0">Parking Lot Occupancy (Visual)</h4>
+            <h4 class="mb-0">Parking Lot Occupancy (Chart)</h4>
         </div>
         <div class="card-body">
             <div style="width: 80%; margin: auto;">
@@ -85,8 +85,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Chart data from server -->
     <script type="application/json" id="chartData">
         {
             "labels": [{% for data in lot_occupancy_data %}"{{ data.name }}"{% if not loop.last %}, {% endif %}{% endfor %}],
@@ -94,12 +92,10 @@
             "available": [{% for data in lot_occupancy_data %}{{ data.total - data.occupied }}{% if not loop.last %}, {% endif %}{% endfor %}]
         }
     </script>
-    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('lotOccupancyChart').getContext('2d');
             const chartData = JSON.parse(document.getElementById('chartData').textContent);
-            
             const lotOccupancyChart = new Chart(ctx, {
                 type: 'bar',
                 data: {

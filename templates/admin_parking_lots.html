@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 
 {% block title %}
-    Admin - Manage Parking Lots
+    Manage Parking Lots
 {% endblock %}
 
 {% block content %}
-    <h1 class="mb-4">Manage Parking Lots</h1>
+    <h1 class="mb-4">Parking Lot Management</h1>
 
     <div class="card mb-4 shadow-sm">
         <div class="card-header bg-success text-white">
-            <h4 class="mb-0">Add New Parking Lot</h4>
+            <h4 class="mb-0">Add a New Parking Lot</h4>
         </div>
         <div class="card-body">
             <form action="{{ url_for('admin_parking_lots') }}" method="POST">
                 <div class="mb-3">
-                    <label for="prime_location_name" class="form-label">Prime Location Name</label>
+                    <label for="prime_location_name" class="form-label">Location Name</label>
                     <input type="text" class="form-control" id="prime_location_name" name="prime_location_name" required>
                 </div>
                 <div class="mb-3">
-                    <label for="price_per_hour" class="form-label">Price per Hour ($)</label>
+                    <label for="price_per_hour" class="form-label">Hourly Rate ($)</label>
                     <input type="number" step="0.01" class="form-control" id="price_per_hour" name="price_per_hour" required min="0">
                 </div>
                 <div class="mb-3">
@@ -30,17 +30,17 @@
                     <input type="text" class="form-control" id="pin_code" name="pin_code" required pattern="[0-9]{6}" title="Please enter a 6-digit pin code.">
                 </div>
                 <div class="mb-3">
-                    <label for="maximum_number_of_spots" class="form-label">Maximum Number of Spots</label>
+                    <label for="maximum_number_of_spots" class="form-label">Total Spots</label>
                     <input type="number" class="form-control" id="maximum_number_of_spots" name="maximum_number_of_spots" required min="1">
                 </div>
-                <button type="submit" class="btn btn-success w-100">Add Parking Lot</button>
+                <button type="submit" class="btn btn-success w-100">Add Lot</button>
             </form>
         </div>
     </div>
 
     <div class="card shadow-sm">
         <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">Existing Parking Lots</h4>
+            <h4 class="mb-0">Current Parking Lots</h4>
         </div>
         <div class="card-body">
             {% if lot_data %}
@@ -53,9 +53,8 @@
                             </div>
                             <div class="card-body d-flex flex-column">
                                 <p class="card-text"><strong>Address:</strong> {{ data.lot.address }}, {{ data.lot.pin_code }}</p>
-                                <p class="card-text"><strong>Price/Hour:</strong> ${{ "%.2f"|format(data.lot.price_per_hour) }}</p>
+                                <p class="card-text"><strong>Hourly Rate:</strong> ${{ "%.2f"|format(data.lot.price_per_hour) }}</p>
                                 <p class="card-text mb-2"><strong>Spots:</strong> <span class="badge bg-secondary">Total: {{ data.total_spots }}</span> <span class="badge bg-danger">Occupied: {{ data.occupied_spots }}</span> <span class="badge bg-success">Available: {{ data.total_spots - data.occupied_spots }}</span></p>
-                                
                                 <hr/>
                                 <h6>Spot Status:</h6>
                                 <div class="d-flex flex-wrap flex-grow-1">
@@ -79,7 +78,7 @@
                 {% endfor %}
                 </div>
             {% else %}
-                <p>No parking lots added yet. Use the form above to add your first parking lot!</p>
+                <p>No parking lots yet. Use the form above to add your first one!</p>
             {% endif %}
         </div>
     </div>

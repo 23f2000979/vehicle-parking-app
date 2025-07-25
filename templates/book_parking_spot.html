@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-    Book Parking Spot
+    Book a Spot
 {% endblock %}
 
 {% block content %}
@@ -9,19 +9,19 @@
         <div class="col-md-6">
             <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
-                    <h3 class="text-center mb-0">Book Spot in {{ parking_lot.prime_location_name }}</h3>
+                    <h3 class="text-center mb-0">Book a Spot in {{ parking_lot.prime_location_name }}</h3>
                 </div>
                 <div class="card-body">
-                    <p class="lead text-center">Price: <strong>${{ "%.2f"|format(parking_lot.price_per_hour) }}</strong> per hour</p>
-                    <p class="text-muted text-center">An available spot will be automatically assigned upon booking.</p>
+                    <p class="lead text-center">Hourly Rate: <strong>${{ "%.2f"|format(parking_lot.price_per_hour) }}</strong></p>
+                    <p class="text-muted text-center">We'll assign you the next available spot automatically.</p>
                     <form action="{{ url_for('book_parking_spot', lot_id=parking_lot.id) }}" method="POST">
                         <div class="mb-3">
                             <label for="vehicle_number" class="form-label">Vehicle Number (e.g., MH01AB1234)</label>
                             <input type="text" class="form-control" id="vehicle_number" name="vehicle_number" required placeholder="Enter your vehicle number">
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Confirm Booking</button>
+                        <button type="submit" class="btn btn-primary w-100">Book My Spot</button>
                     </form>
-                    <p class="text-center mt-3"><a href="{{ url_for('user_dashboard') }}" class="btn btn-outline-secondary">Cancel and Go Back</a></p>
+                    <p class="text-center mt-3"><a href="{{ url_for('user_dashboard') }}" class="btn btn-outline-secondary">Cancel</a></p>
                 </div>
             </div>
         </div>

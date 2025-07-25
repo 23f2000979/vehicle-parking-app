@@ -1,32 +1,32 @@
 {% extends "base.html" %}
 
 {% block title %}
-    User Dashboard
+    Your Dashboard
 {% endblock %}
 
 {% block content %}
-    <h1 class="mb-4">Welcome to your User Dashboard, {{ session.get('user_email') }}!</h1>
+    <h1 class="mb-4">Hi {{ session.get('user_email') }}, welcome to your dashboard!</h1>
     <div class="row">
         <div class="col-md-6 mb-4">
             <div class="card h-100">
                 <div class="card-header bg-info text-white">
-                    <h4>Recent Parking History</h4>
+                    <h4>Recent Parking Activity</h4>
                 </div>
                 <div class="card-body">
-                    <p>This section will display your recent parking history, including details of parked vehicles and costs.</p>
-                    <a href="{{ url_for('user_history') }}" class="btn btn-info">View My Parking History</a>
+                    <p>See your latest parking sessions and costs here.</p>
+                    <a href="{{ url_for('user_history') }}" class="btn btn-info">See My Parking History</a>
                 </div>
             </div>
         </div>
         <div class="col-md-6 mb-4">
             <div class="card h-100">
                 <div class="card-header bg-success text-white">
-                    <h4>Find Parking</h4>
+                    <h4>Find a Spot</h4>
                 </div>
                 <div class="card-body">
-                    <p>Search for available parking lots near you and book a spot instantly.</p>
+                    <p>Looking for a place to park? Search below and book instantly.</p>
                     <form class="d-flex mt-3" action="{{ url_for('user_dashboard') }}" method="GET">
-                        <input class="form-control me-2" type="search" placeholder="Search by location/pin code" aria-label="Search" name="query" value="{{ request.args.get('query', '') }}">
+                        <input class="form-control me-2" type="search" placeholder="Search by location or pin code" aria-label="Search" name="query" value="{{ request.args.get('query', '') }}">
                         <button class="btn btn-success" type="submit">Search</button>
                     </form>
                     <h5 class="mt-4">Available Parking Lots:</h5>
@@ -37,11 +37,11 @@
                                     <div>
                                         <h6 class="mb-1">{{ lot_data.lot.prime_location_name }}</h6>
                                         <small>{{ lot_data.lot.address }}, {{ lot_data.lot.pin_code }}</small><br/>
-                                        <small>Price: ${{ "%.2f"|format(lot_data.lot.price_per_hour) }} per hour</small><br/>
+                                        <small>Rate: ${{ "%.2f"|format(lot_data.lot.price_per_hour) }} per hour</small><br/>
                                         <span class="badge bg-primary rounded-pill">Available: {{ lot_data.available_spots }} / {{ lot_data.total_spots }}</span>
                                     </div>
                                     {% if lot_data.available_spots > 0 %}
-                                        <a href="{{ url_for('book_parking_spot', lot_id=lot_data.lot.id) }}" class="btn btn-sm btn-primary mt-2 mt-md-0">Book Spot</a>
+                                        <a href="{{ url_for('book_parking_spot', lot_id=lot_data.lot.id) }}" class="btn btn-sm btn-primary mt-2 mt-md-0">Book Now</a>
                                     {% else %}
                                         <span class="badge bg-danger mt-2 mt-md-0">Full</span>
                                     {% endif %}
@@ -49,7 +49,7 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <p>No parking lots found or available.</p>
+                        <p>No parking lots found. Try a different search!</p>
                     {% endif %}
                 </div>
             </div>
@@ -59,10 +59,10 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <h4>My Parking Summary</h4>
+                    <h4>Parking Summary</h4>
                 </div>
                 <div class="card-body">
-                    <p>Visual summary of your parking habits (charts will appear here).</p>
+                    <p>Here's a quick look at your parking spending over time.</p>
                     <canvas id="userParkingChart"></canvas>
                 </div>
             </div>
@@ -71,20 +71,16 @@
 
     {% if parking_data_for_chart %}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Chart data from server -->
     <script type="application/json" id="userChartData">
         {
             "labels": [{% for data in parking_data_for_chart %}"{{ data.month }}"{% if not loop.last %}, {% endif %}{% endfor %}],
             "costs": [{% for data in parking_data_for_chart %}{{ data.total_cost }}{% if not loop.last %}, {% endif %}{% endfor %}]
         }
     </script>
-    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const ctx = document.getElementById('userParkingChart').getContext('2d');
             const chartData = JSON.parse(document.getElementById('userChartData').textContent);
-            
             const userParkingChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
