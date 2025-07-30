@@ -11,6 +11,7 @@ db.init_app(app)
 # --- DB Init & Admin ---
 with app.app_context():
     try:
+        db.drop_all()
         db.create_all()
 
         # If you see two admins, that's on you!
@@ -308,7 +309,7 @@ def release_parking_spot(reservation_id):
         reservation.total_cost = round(total_cost, 2)
         parking_spot.status = "A"
         db.session.commit()
-        flash(f"Spot {parking_spot.spot_number} released! You owe: ${reservation.total_cost:.2f}", "success")
+        flash(f"Spot {parking_spot.spot_number} released! You owe: ₹{reservation.total_cost:.2f}", "success")
         return redirect(url_for("user_history"))
     return render_template("release_parking_spot.html", reservation=reservation, parking_spot=parking_spot, parking_lot=parking_lot)
 

@@ -37,7 +37,7 @@
                                     <div>
                                         <h6 class="mb-1">{{ lot_data.lot.prime_location_name }}</h6>
                                         <small>{{ lot_data.lot.address }}, {{ lot_data.lot.pin_code }}</small><br/>
-                                        <small>Rate: ${{ "%.2f"|format(lot_data.lot.price_per_hour) }} per hour</small><br/>
+                                        <small>Rate: ₹{{ "%.2f"|format(lot_data.lot.price_per_hour) }} per hour</small><br/>
                                         <span class="badge bg-primary rounded-pill">Available: {{ lot_data.available_spots }} / {{ lot_data.total_spots }}</span>
                                     </div>
                                     {% if lot_data.available_spots > 0 %}
@@ -86,7 +86,7 @@
                 data: {
                     labels: chartData.labels,
                     datasets: [{
-                        label: 'Total Parking Cost ($)',
+                        label: 'Total Parking Cost (₹)',
                         data: chartData.costs,
                         backgroundColor: 'rgba(54, 162, 235, 0.5)',
                         borderColor: 'rgba(54, 162, 235, 1)',
@@ -100,7 +100,7 @@
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Total Cost ($)'
+                                text: 'Total Cost (₹)'
                             }
                         },
                         x: {
